@@ -1,0 +1,122 @@
+-- Query 1: 
+-- Which actors have appeared in the most films in each category, and how many films did they appear in?
+
+WITH category_film_counts AS (
+    SELECT c.name AS category,
+        f.film_id,
+        COUNT(*) AS film_count
+    FROM category c
+        JOIN film_category fc ON c.category_id = fc.category_id
+        JOIN film f ON fc.film_id = f.film_id
+    GROUP BY c.name,
+        f.film_id
+),
+actor_film_counts AS (
+    SELECT af.actor_id,
+        fc.category_id,
+        COUNT(*) AS film_count
+    FROM film_actor af
+        JOIN film f ON af.film_id = f.film_id
+        JOIN film_category fc ON fc.film_id = f.film_id
+    GROUP BY af.actor_id,
+        fc.category_id
+),
+ranked_actors AS (
+    SELECT c.name AS category,
+        a.first_name || ' ' || a.last_name AS actor,
+        af.film_count,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.name
+            ORDER BY af.film_count DESC
+        ) AS actor_rank
+    FROM category_film_counts cfc
+        JOIN actor_film_counts af ON cfc.film_id = af.category_id
+        JOIN actor a ON af.actor_id = a.actor_id
+        JOIN category c ON cfc.category = c.name
+)
+SELECT category,
+    actor,
+    film_count
+FROM ranked_actors
+WHERE actor_rank = 1
+ORDER BY category;
+
+-- Query 2
+-- How do the two stores compare in the count of rentals by month?
+
+SELECT DATE_TRUNC('month', r.rental_date) AS month,
+    COUNT(r.rental_id) rental_count,
+    s.store_id,
+    CONCAT(ci.city, ', ', co.country) AS store_location
+FROM rental r
+    JOIN staff st ON r.staff_id = st.staff_id
+    JOIN store s ON st.store_id = s.store_id
+    JOIN address a ON s.address_id = a.address_id
+    JOIN city ci ON a.city_id = ci.city_id
+    JOIN country co ON ci.country_id = co.country_id
+GROUP BY 3, 4, 1
+ORDER BY 3, 1;
+
+-- Query 3
+-- Which movie categories have the highest average rental duration and rental count?
+
+WITH rental_days AS (
+    SELECT f.title AS film_title,
+        c.name AS category,
+        SUM(DATE_PART('day', r.return_date - r.rental_date)) AS total_rental_days,
+        COUNT(r.rental_id) AS rental_count
+    FROM film f
+        JOIN film_category fc ON f.film_id = fc.film_id
+        JOIN category c ON fc.category_id = c.category_id
+        JOIN inventory i ON f.film_id = i.film_id
+        JOIN rental r ON i.inventory_id = r.inventory_id
+    GROUP BY 2, 1
+)
+SELECT film_title,
+    category,
+    total_rental_days / rental_count AS avg_rental_days,
+    rental_count,
+    RANK() OVER (
+        ORDER BY total_rental_days / rental_count DESC
+    ) AS avg_rental_rank
+FROM rental_days
+ORDER BY avg_rental_rank;
+
+-- Query 4
+-- What is the difference across monthly payments during 2007 for each of the top 10 paying customers?
+
+WITH top_customers AS (
+    SELECT customer_id
+    FROM payment
+    GROUP BY customer_id
+    ORDER BY SUM(amount) DESC
+    LIMIT 10
+), monthly_payments AS (
+    SELECT customer_id,
+        DATE_TRUNC('month', payment_date) AS pay_month,
+        SUM(amount) AS pay_sum,
+        LAG(SUM(amount)) 
+            OVER (PARTITION BY customer_id 
+            ORDER BY DATE_TRUNC('month', payment_date))
+            AS lag
+    FROM payment
+    WHERE customer_id IN (
+            SELECT customer_id
+            FROM top_customers
+        )
+    GROUP BY 1, 2
+    ORDER BY 1, 2
+),
+pay_diff AS (
+    SELECT customer_id,
+        pay_month,
+        pay_sum,
+        pay_sum - COALESCE(lag, 0) AS monthly_difference
+    FROM monthly_payments
+)
+SELECT CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+    p.pay_month,
+    p.monthly_difference
+FROM customer c
+    JOIN pay_diff p ON c.customer_id = p.customer_id
+ORDER BY customer_name, pay_month;
