@@ -3,6 +3,8 @@
 ## Overview
 Movie Rental Analysis is a comprehensive analysis project that delves into a movie rental database to extract valuable insights about film categories, actor popularity, store performance, and customer payment trends. Through a combination of SQL queries, data visualization techniques, and insightful reporting, this project aims to provide a deep understanding of various aspects of the film rental business.
 
+You can access the full report [here](report.pdf).
+
 ## Features
 - **SQL Queries**: Extract relevant data from the movie rental database using SQL queries to perform analyses on actors, films, rentals, and customer payments.
 - **Visualization**: Utilize Python libraries such as Pandas, Seaborn, Matplotlib, and Plotly Express to create visual representations of the data, offering clear insights and comparisons.
