@@ -29,7 +29,7 @@ You can access the full report [here](report.pdf).
 - Installation of necessary Python libraries (`pandas`, `seaborn`, `matplotlib`, `plotly`, `psycopg2`)
 
 ## Acknowledgements
-This project has been developed as a submission for the Bertelsmann Next Generation Tech Booster Scholarship with Udacity - Data Science Program. The data used in this project was provided by Udacity as part of the course curriculum.
+This project has been developed as a submission for the Bertelsmann Next Generation Tech Booster Scholarship with Udacity Data Science Program. The data used in this project was provided by Udacity as part of the course curriculum.
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
